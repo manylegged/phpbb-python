@@ -25,11 +25,11 @@ from phpbb.utf.utf_tools import utf8_clean_string
 from phpbb.functions import phpbb_check_hash
 from phpbb.constants import USER_INACTIVE, USER_IGNORE
 
-def login_db(username=None, password=None):
+def login_db(username=None, password=None, pass_hash=None):
     if not username:
         return "NO_USERNAME_SUPPLIED", None
 
-    if not password:
+    if not password and not pass_hash:
         return "NO_PASSWORD_SUPPLIED", None
 
     if type(username) is unicode:
@@ -44,7 +44,9 @@ def login_db(username=None, password=None):
     if not user_row:
         return "LOGIN_ERROR_USERNAME", None
 
-    if phpbb_check_hash(password, user_row["user_password"]):
+    user_pass = user_row["user_password"]
+    if (pass_hash == user_pass or
+        (password and phpbb_check_hash(password, user_pass))):
         if user_row["user_type"] in (USER_INACTIVE, USER_IGNORE):
             return "LOGIN_ERROR_ACTIVE", user_row
 
@@ -52,3 +54,12 @@ def login_db(username=None, password=None):
 
     return "LOGIN_ERROR_PASSWORD", user_row
 
+
+def login_user_row(username):
+    if type(username) is unicode:
+        username = username.encode("UTF-8")
+        
+    username_clean = utf8_clean_string(username).decode("UTF-8")
+        
+    return get_user_row(username_clean)
+        
